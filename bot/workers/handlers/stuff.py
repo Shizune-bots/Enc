@@ -21,6 +21,58 @@ from bot.utils.msg_utils import (
 from bot.utils.os_utils import file_exists
 
 
+def get_gpu_info():
+    """Get GPU information if available."""
+    try:
+        import GPUtil
+        gpus = GPUtil.getGPUs()
+        if gpus:
+            gpu_info = []
+            for gpu in gpus:
+                gpu_info.append({
+                    'name': gpu.name,
+                    'memory_total': get_readable_file_size(gpu.memoryTotal * 1024 * 1024),
+                    'memory_used': get_readable_file_size(gpu.memoryUsed * 1024 * 1024),
+                    'memory_free': get_readable_file_size(gpu.memoryFree * 1024 * 1024),
+                    'memory_percent': round((gpu.memoryUsed / gpu.memoryTotal) * 100, 1),
+                    'gpu_load': round(gpu.load * 100, 1),
+                    'temperature': gpu.temperature
+                })
+            return gpu_info
+        return None
+    except ImportError:
+        # GPUtil not installed, try nvidia-smi
+        try:
+            import subprocess
+            result = subprocess.check_output(
+                ['nvidia-smi', '--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu',
+                 '--format=csv,noheader,nounits'],
+                encoding='utf-8'
+            )
+            lines = result.strip().split('\n')
+            gpu_info = []
+            for line in lines:
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 6:
+                    memory_total = int(parts[1]) * 1024 * 1024
+                    memory_used = int(parts[2]) * 1024 * 1024
+                    memory_free = int(parts[3]) * 1024 * 1024
+                    gpu_info.append({
+                        'name': parts[0],
+                        'memory_total': get_readable_file_size(memory_total),
+                        'memory_used': get_readable_file_size(memory_used),
+                        'memory_free': get_readable_file_size(memory_free),
+                        'memory_percent': round((int(parts[2]) / int(parts[1])) * 100, 1),
+                        'gpu_load': float(parts[4]),
+                        'temperature': int(parts[5]) if parts[5] else 'N/A'
+                    })
+            return gpu_info if gpu_info else None
+        except (FileNotFoundError, subprocess.CalledProcessError, Exception):
+            return None
+    except Exception:
+        return None
+
+
 async def up(event, args, client):
     """ping bot!"""
     if not user_is_allowed(event.sender_id):
@@ -72,6 +124,30 @@ async def status(event, args, client):
     t_cores = psutil.cpu_count(logical=True)
     memory = psutil.virtual_memory()
     disk = psutil.disk_usage("/").percent
+    
+    # Get GPU info
+    gpu_info = get_gpu_info()
+    
+    # Build GPU section
+    gpu_section = ""
+    if gpu_info:
+        gpu_section = "\n\n**GPU Information:**\n"
+        for idx, gpu in enumerate(gpu_info, 1):
+            if len(gpu_info) > 1:
+                gpu_section += f"\n**GPU {idx}:** `{gpu['name']}`\n"
+            else:
+                gpu_section += f"**GPU:** `{gpu['name']}`\n"
+            gpu_section += (
+                f"**Usage:** `{gpu['gpu_load']}%` "
+                f"**Temp:** `{gpu['temperature']}°C`\n"
+                f"**Total Memory:** `{gpu['memory_total']}`\n"
+                f"**Used:** `{gpu['memory_used']}` "
+                f"**Free:** `{gpu['memory_free']}`\n"
+                f"**Memory Usage:** `{gpu['memory_percent']}%`"
+            )
+    else:
+        gpu_section = "\n\n**GPU:** `No GPU Available`"
+    
     await event.reply(
         f"**Version:** `{vercheck}`\n"
         f"**Branch:** `{branch}`\n"
@@ -95,6 +171,7 @@ async def status(event, args, client):
         f"**Total RAM:** `{get_readable_file_size(memory.total)}`\n"
         f"**Used:** `{get_readable_file_size(memory.used)}` "
         f"**Free:** `{get_readable_file_size(memory.available)}`"
+        f"{gpu_section}"
     )
 
 
