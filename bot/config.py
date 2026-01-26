@@ -68,7 +68,7 @@ class Config:
             self.NO_TEMP_PM = config("NO_TEMP_PM", default=False, cast=bool)
             self.OVR = config("OVR", default=None)
             self.OWNER = config("OWNER")
-            self.PAUSE_ON_DL_INFO = config("PODI", default=True, cast=bool)
+            self.PAUSE_ON_DL_INFO = config("PODI", default=False, cast=bool)
             self.QDL_TIMEOUT = config("QBIT_DL_TIMEOUT", default=0, cast=int)
             self.QBIT_PORT = config("QBIT_PORT", default=8090, cast=int)
             self.QBIT_PORT2 = config("QBIT_PORT2", default=9090, cast=int)
