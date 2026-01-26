@@ -5,6 +5,7 @@ aria2p
 country_converter
 emoji-country-flag
 feedparser
+gputil
 html_telegraph_poster
 humanize
 lxml[html_clean]
