@@ -32,14 +32,14 @@ async def start_aria2p():
 
 
 async def start_qbit():
-    os.system(
-        f"qbittorrent-nox -d --webui-port={conf.QBIT_PORT} --profile={os.getcwd()}/qbit"
-    )
-    os.system(
-        f"qbittorrent-nox -d --webui-port={conf.QBIT_PORT2} --profile={os.getcwd()}/qbit  --configuration=1"
-    )
+   # os.system(
+   #     f"qbittorrent-nox -d --webui-port={conf.QBIT_PORT} --profile={os.getcwd()}/qbit"
+   # )
+   # os.system(
+   #     f"qbittorrent-nox -d --webui-port={conf.QBIT_PORT2} --profile={os.getcwd()}/qbit  --configuration=1"
+   # )
     # TO_DO: Properly check if qbit is fully operational.
-    _bot.sqs = True
+    _bot.sqs = False
 
 
 async def start_rpc():
@@ -122,7 +122,7 @@ async def on_startup():
         scheduler.start()
         asyncio.create_task(autostat())
         asyncio.create_task(start_rpc())
-        asyncio.create_task(start_qbit())
+       # asyncio.create_task(start_qbit())
         loop = asyncio.get_running_loop()
         for signame in {"SIGINT", "SIGTERM", "SIGABRT"}:
             loop.add_signal_handler(
