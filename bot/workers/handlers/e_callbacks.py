@@ -133,6 +133,55 @@ async def skip(e, skip_jobs=False):
 async def skip_jobs(e):
     return await skip(e, skip_jobs=True)
 
+def get_gpu_info():
+    """Get GPU information if available."""
+    try:
+        import GPUtil
+        gpus = GPUtil.getGPUs()
+        if gpus:
+            gpu_info = []
+            for gpu in gpus:
+                gpu_info.append({
+                    'name': gpu.name,
+                    'memory_total': get_readable_file_size(gpu.memoryTotal * 1024 * 1024),
+                    'memory_used': get_readable_file_size(gpu.memoryUsed * 1024 * 1024),
+                    'memory_free': get_readable_file_size(gpu.memoryFree * 1024 * 1024),
+                    'memory_percent': round((gpu.memoryUsed / gpu.memoryTotal) * 100, 1),
+                    'gpu_load': round(gpu.load * 100, 1),
+                    'temperature': gpu.temperature
+                })
+            return gpu_info
+        return None
+    except ImportError:
+        # GPUtil not installed, try nvidia-smi
+        try:
+            result = subprocess.check_output(
+                ['nvidia-smi', '--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu',
+                 '--format=csv,noheader,nounits'],
+                encoding='utf-8'
+            )
+            lines = result.strip().split('\n')
+            gpu_info = []
+            for line in lines:
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 6:
+                    memory_total = int(parts[1]) * 1024 * 1024
+                    memory_used = int(parts[2]) * 1024 * 1024
+                    memory_free = int(parts[3]) * 1024 * 1024
+                    gpu_info.append({
+                        'name': parts[0],
+                        'memory_total': get_readable_file_size(memory_total),
+                        'memory_used': get_readable_file_size(memory_used),
+                        'memory_free': get_readable_file_size(memory_free),
+                        'memory_percent': round((int(parts[2]) / int(parts[1])) * 100, 1),
+                        'gpu_load': float(parts[4]),
+                        'temperature': int(parts[5]) if parts[5] else 'N/A'
+                    })
+            return gpu_info if gpu_info else None
+        except (FileNotFoundError, subprocess.CalledProcessError, Exception):
+            return None
+    except Exception:
+        return None
 
 async def stats(e):
     try:
@@ -153,12 +202,20 @@ async def stats(e):
         free = hbs(free)
         elapsed = time_formatter(time.time() - stime)
         cpuUsage = psutil.cpu_percent(interval=0.5)
+        
+        # Get GPU info
+        gpu_info = get_gpu_info()
+        gpu_text = ""
+        if gpu_info:
+            gpu = gpu_info[0]  # Use first GPU
+            gpu_text = f"\n\nGPU: {gpu['gpu_load']}%\nGPU RAM: {gpu['memory_percent']}%"
+        
         if data == "0":
             ans = f"Downloaded:\n{ov}\n\nFileName:\n{input}\n\nEncoded:\n{ot}\n\nElapsed time:\n{elapsed}"
         elif data == "1":
-            ans = f"CPU: {cpuUsage}%\n\nTotal Disk Space:\n{total}\n\nBot Uptime:\n{currentTime}\n\nUsed: {used}  Free: {free}"
+            ans = f"CPU: {cpuUsage}%{gpu_text}\n\nTotal Disk Space:\n{total}\n\nBot Uptime:\n{currentTime}\n\nUsed: {used}  Free: {free}"
         elif data == "2":
-            ans = f"CPU: {cpuUsage}%\n\nTotal Disk Space:\n{total}\n\nDownloaded:\n{ov}\n\nEncoded:\n{ot}\n\nElapsed:\n{elapsed}\n\nBot Uptime:\n{currentTime}\n\nUsed: {used}  Free: {free}"
+            ans = f"CPU: {cpuUsage}%{gpu_text}\n\nTotal Disk Space:\n{total}\n\nDownloaded:\n{ov}\n\nEncoded:\n{ot}\n\nElapsed:\n{elapsed}\n\nBot Uptime:\n{currentTime}\n\nUsed: {used}  Free: {free}"
         await e.answer(ans, alert=True)
     except Exception:
         await logger(Exception)
