@@ -77,6 +77,7 @@ async def onrestart():
 
 async def onstart():
     try:
+        await start_rpc()
         for i in conf.OWNER.split():
             try:
                 await tele.send_message(int(i), f"**I'm {enquip()} {enmoji()}**")
@@ -119,10 +120,10 @@ async def on_termination():
 
 async def on_startup():
     try:
+        asyncio.create_task(start_rpc())
         scheduler.start()
         asyncio.create_task(autostat())
-        asyncio.create_task(start_rpc())
-       # asyncio.create_task(start_qbit())
+        # asyncio.create_task(start_qbit())
         loop = asyncio.get_running_loop()
         for signame in {"SIGINT", "SIGTERM", "SIGABRT"}:
             loop.add_signal_handler(
