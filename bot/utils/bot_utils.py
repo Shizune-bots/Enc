@@ -284,6 +284,7 @@ video_mimetype = [
     "video/mp4",
     "application/x-mpegURL",
     "video/MP2T",
+    "video/mp2t",
     "video/3gpp",
     "video/quicktime",
     "video/x-msvideo",
@@ -434,6 +435,7 @@ def is_video_file(filename: str):
         ".mpf",
         ".mpg",
         ".mpg2",
+        ".ts",
         ".xvid",
     )
     if filename.endswith((video_file_extensions)):
