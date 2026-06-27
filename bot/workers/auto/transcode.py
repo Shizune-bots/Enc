@@ -345,7 +345,7 @@ async def thing():
             from bot.utils.bot_utils import parse_vmaf_from_stderr  
             vmaf_data = parse_vmaf_from_stderr(stderr)  
             if vmaf_data:  
-                await msg_t.reply(f"**Quality Metrics:**\n{vmaf_data}", disable_web_page_preview=True)
+                await msg_t.reply(f"**Quality Metrics:**\n{vmaf_data}")
         if encode.process.returncode != 0:
             s_remove(out)
             skip(queue_id)
