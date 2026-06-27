@@ -16,6 +16,7 @@ from bot.utils.bot_utils import enc_canceller as e_cancel
 from bot.utils.bot_utils import encode_info as einfo
 from bot.utils.bot_utils import encode_job as ejob
 from bot.utils.bot_utils import get_bqueue, get_queue, get_var, hbs
+from bot.utils.bot_utils import parse_vmaf_from_stderr
 from bot.utils.bot_utils import time_formatter as tf
 from bot.utils.db_utils import save2db
 from bot.utils.log_utils import logger
@@ -340,6 +341,11 @@ async def thing():
             stdout=stdout,
             exe_prefix=ffmpeg.split(maxsplit=1)[0],
         )
+        if stderr and b"vmaf" in stderr.lower():  
+            from bot.utils.bot_utils import parse_vmaf_from_stderr  
+            vmaf_data = parse_vmaf_from_stderr(stderr)  
+            if vmaf_data:  
+                await msg_t.reply(f"**Quality Metrics:**\n{vmaf_data}", disable_web_page_preview=True)
         if encode.process.returncode != 0:
             s_remove(out)
             skip(queue_id)
