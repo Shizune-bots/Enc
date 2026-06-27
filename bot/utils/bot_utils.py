@@ -768,3 +768,20 @@ async def sync_to_async(func, *args, wait=True, **kwargs):
     loop = asyncio.get_event_loop()
     future = loop.run_in_executor(THREADPOOL, pfunc)
     return await future if wait else future
+
+
+def parse_vmaf_from_stderr(stderr):  
+    try:  
+        stderr_text = stderr.decode('utf-8', errors='ignore')  
+        vmaf_lines = []  
+          
+        for line in stderr_text.split('\n'):  
+            if 'vmaf' in line.lower() or 'ssim' in line.lower() or 'psnr' in line.lower():  
+                vmaf_lines.append(line.strip())  
+          
+        if vmaf_lines:  
+            return '\n'.join(vmaf_lines)  
+    except Exception:  
+        pass  
+    return None
+
